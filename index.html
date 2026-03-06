@@ -4,12 +4,138 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minesweeper</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            gap: 1px;
+            margin: auto;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: #ddd;
+            border: 1px solid #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        .mine {
+            background: red;
+        }
+        .revealed {
+            background: #fff;
+        }
+        .hidden {
+            background: #999;
+        }
+    </style>
 </head>
 <body>
     <h1>Minesweeper</h1>
-    <div id="game"></div>
-    <div id="status"></div>
-    <script src="script.js"></script>
+    <div id="board"></div>
+    <script>
+        const boardElement = document.getElementById('board');
+        const boardSize = 10;
+        const mineCount = 10;
+        let board = [];
+
+        function createBoard() {
+            board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+            let minesPlaced = 0;
+            while (minesPlaced < mineCount) {
+                const x = Math.floor(Math.random() * boardSize);
+                const y = Math.floor(Math.random() * boardSize);
+                if (board[x][y] === 0) {
+                    board[x][y] = 'M';
+                    minesPlaced++;
+                    updateSurroundingCells(x, y);
+                }
+            }
+            renderBoard();
+        }
+
+        function updateSurroundingCells(x, y) {
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    const newX = x + i;
+                    const newY = y + j;
+                    if (newX >= 0 && newX < boardSize && newY >= 0 && newY < boardSize && board[newX][newY] !== 'M') {
+                        board[newX][newY]++;
+                    }
+                }
+            }
+        }
+
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell hidden';
+                    cell.dataset.x = i;
+                    cell.dataset.y = j;
+                    cell.addEventListener('click', revealCell);
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function revealCell(event) {
+            const x = event.target.dataset.x;
+            const y = event.target.dataset.y;
+            const cellValue = board[x][y];
+            event.target.classList.remove('hidden');
+            event.target.classList.add('revealed');
+            if (cellValue === 'M') {
+                event.target.classList.add('mine');
+                alert('Game Over!');
+                revealAllMines();
+            } else if (cellValue > 0) {
+                event.target.innerText = cellValue;
+            } else {
+                // Reveal surrounding cells if no mines nearby
+                revealSurroundingCells(x, y);
+            }
+        }
+
+        function revealSurroundingCells(x, y) {
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const newX = parseInt(x) + i;
+                    const newY = parseInt(y) + j;
+                    if (newX >= 0 && newX < boardSize && newY >= 0 && newY < boardSize) {
+                        const cell = document.querySelector(`.cell[data-x='${newX}'][data-y='${newY}']`);
+                        if (cell && cell.classList.contains('hidden')) {
+                            revealCell({ target: cell });
+                        }
+                    }
+                }
+            }
+        }
+
+        function revealAllMines() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                if (board[cell.dataset.x][cell.dataset.y] === 'M') {
+                    cell.classList.remove('hidden');
+                    cell.classList.add('mine');
+                }
+            });
+        }
+
+        createBoard();
+    </script>
 </body>
 </html>
